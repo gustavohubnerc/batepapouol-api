@@ -73,7 +73,12 @@ app.get('/participants', async (req, res) => {
 
 app.post('/messages', async (req, res) => {
   const { to, text, type } = req.body;
-  const from = req.header.user;
+  const from = req.headers.user;
+
+  const userExists = await db.collection('participants').findOne({ name: from });
+
+  if(!userExists) return res.status(422);
+
   const messagesSchema = Joi.object({
     to: Joi.string().min(1).required(),
     text: Joi.string().min(1).required(),
@@ -83,11 +88,11 @@ app.post('/messages', async (req, res) => {
   const validation = messagesSchema.validate(req.body, { abortEarly: false });
   if(validation.error){
     const errors = validation.error.details.map(detail => detail.message);
-    return res.status(422).send(errors);
+    return res.status(422).send(errors.message);
   }
 
   try {
-    await db.collection('messages').insertOne({
+    const newMessage = await db.collection('messages').insertOne({
       from,
       to,
       text,
@@ -95,7 +100,7 @@ app.post('/messages', async (req, res) => {
       time: dayjs().format('HH:mm:ss'),
     });
     
-    res.sendStatus(201);
+    res.sendStatus(201).send(newMessage);
   } catch (err) {
     console.log(err.message);
     res.status(500).send(err.message);
@@ -132,6 +137,21 @@ app.get('/messages', async (req, res) => {
   }
 });
 
+app.post('/status', async (req, res) => {
+  const user = req.header('User');
+
+  const participant = await db.collection('participants').findOne({ name: user }) 
+    
+  if(!participant) return res.status(404);
+  
+  try {
+    await db.collection('participants')
+      .updateOne({ name: user }, { $set: { lastStatus: Date.now() } })
+      .then(() => res.sendStatus(200));
+  } catch (err) {
+    res.status(500).send(err.message);
+  }
+})
 
 const PORT = 5000;
 app.listen(PORT, () => console.log(`Rodando na porta ${PORT}`));
