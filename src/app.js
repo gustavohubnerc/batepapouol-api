@@ -56,8 +56,8 @@ app.post('/participants', async (req, res) => {
     });
 
     res.sendStatus(201);
-  } catch (error) {
-    console.log(error.message);
+  } catch (err) {
+    console.log(err.message);
     res.status(500).send();
   }
 })
@@ -66,8 +66,8 @@ app.get('/participants', async (req, res) => {
   try {
     const participants = await db.collection('participants').find().toArray();
     res.send(participants);
-  } catch (error) {
-    res.status(500).send(error.message);
+  } catch (err) {
+    res.status(500).send(err.message);
   }
 })
 
@@ -94,12 +94,43 @@ app.post('/messages', async (req, res) => {
       type,
       time: dayjs().format('HH:mm:ss'),
     });
-  } catch (error) {
-    console.log(error.message);
-    res.status(500).send();
+    
+    res.sendStatus(201);
+  } catch (err) {
+    console.log(err.message);
+    res.status(500).send(err.message);
   }
 })
 
+app.get('/messages', async (req, res) => {
+  const user = req.header.user;
+  const { limit } = req.query;
+
+  try {
+    let query = {
+      $or: [
+        { type: 'message' },
+        { from: 'Todos' },
+        { to: user },
+        { from: user }
+      ]
+    };
+
+    let messages = await db.collection('messages').find(query).toArray();
+
+    if (limit) {
+      const limitNumber = parseInt(limit);
+      if (isNaN(limitNumber) || limitNumber <= 0) {
+        return res.status(422).send('Limit deve ser um número inteiro positivo!');
+      }
+      messages = messages.slice(-limitNumber);
+    }
+
+    res.send(messages);
+  } catch (err) {
+    res.status(500).send(err.message);
+  }
+});
 
 
 const PORT = 5000;
