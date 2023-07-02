@@ -75,6 +75,14 @@ app.post('/messages', async (req, res) => {
   const { to, text, type } = req.body;
   const from = req.headers.user;
 
+  try {
+    const userExists = await db.collection('participants').findOne({ name: from });
+
+    if(!userExists) return res.status(422);
+  } catch (err) {
+    return res.status(500).send(err.message);
+  }
+
   const messagesSchema = Joi.object({
     to: Joi.string().min(1).required(),
     text: Joi.string().min(1).required(),
@@ -84,12 +92,8 @@ app.post('/messages', async (req, res) => {
   const validation = messagesSchema.validate(req.body, { abortEarly: false });
   if(validation.error){
     const errors = validation.error.details.map(detail => detail.message);
-    return res.status(422).send(errors.message);
+    return res.status(422).send(errors);
   }
-
-  const userExists = await db.collection('participants').findOne({ name: from });
-
-  if(!userExists) return res.status(422);
 
   const newMessage = {
     from,
@@ -118,6 +122,7 @@ app.get('/messages', async (req, res) => {
         { type: 'message' },
         { from: 'Todos' },
         { to: user },
+        { to: 'Todos' },
         { from: user }
       ]
     };
