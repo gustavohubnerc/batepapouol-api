@@ -12,15 +12,15 @@ dotenv.config();
 dayjs();
 
 const mongoClient = new MongoClient(process.env.DATABASE_URL);
+let db;
 
 try {
   await mongoClient.connect();
   console.log('MongoDB connected!');
+  db = mongoClient.db();
 } catch (err) {
   console.log(err.message);
 }
-
-const db = mongoClient.db();
 
 app.post('/participants', async (req, res) => {
   const { name } = req.body;
@@ -102,7 +102,6 @@ app.post('/messages', async (req, res) => {
     
     res.sendStatus(201).send(newMessage);
   } catch (err) {
-    console.log(err.message);
     res.status(422).send(err.message);
   }
 })
@@ -138,16 +137,17 @@ app.get('/messages', async (req, res) => {
 });
 
 app.post('/status', async (req, res) => {
-  const user = req.header('User');
+  const user = req.headers.user;
 
-  const participant = await db.collection('participants').findOne({ name: user }) 
+  const participant = await db.collection('participants').findOne({ name: user });
     
   if(!participant) return res.status(404);
   
   try {
     await db.collection('participants')
       .updateOne({ name: user }, { $set: { lastStatus: Date.now() } })
-      .then(() => res.sendStatus(200));
+      
+      res.sendStatus(200);
   } catch (err) {
     res.status(500).send(err.message);
   }
