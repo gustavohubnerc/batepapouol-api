@@ -75,10 +75,6 @@ app.post('/messages', async (req, res) => {
   const { to, text, type } = req.body;
   const from = req.headers.user;
 
-  const userExists = await db.collection('participants').findOne({ name: from });
-
-  if(!userExists) return res.status(422);
-
   const messagesSchema = Joi.object({
     to: Joi.string().min(1).required(),
     text: Joi.string().min(1).required(),
@@ -90,6 +86,10 @@ app.post('/messages', async (req, res) => {
     const errors = validation.error.details.map(detail => detail.message);
     return res.status(422).send(errors.message);
   }
+
+  const userExists = await db.collection('participants').findOne({ name: from });
+
+  if(!userExists) return res.status(422);
 
   try {
     const newMessage = await db.collection('messages').insertOne({
