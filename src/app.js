@@ -92,7 +92,7 @@ app.post('/messages', async (req, res) => {
   const validation = messagesSchema.validate(req.body, { abortEarly: false });
   if(validation.error){
     const errors = validation.error.details.map(detail => detail.message);
-    return res.status(422).send(errors);
+    return res.sendStatus(422).send(errors);
   }
 
   const newMessage = {
@@ -107,7 +107,7 @@ app.post('/messages', async (req, res) => {
     await db.collection('messages').insertOne(newMessage);
     res.sendStatus(201);
   } catch (err) {
-    res.status(422).send(err.message);
+    res.sendStatus(422).send(err.message);
   }
 
 })
@@ -148,7 +148,7 @@ app.post('/status', async (req, res) => {
 
   const participant = await db.collection('participants').findOne({ name: user });
     
-  if(!participant) return res.status(404);
+  if(!participant) return res.sendStatus(404);
   
   try {
     await db.collection('participants')
