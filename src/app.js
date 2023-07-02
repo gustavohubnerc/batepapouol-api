@@ -91,19 +91,21 @@ app.post('/messages', async (req, res) => {
 
   if(!userExists) return res.status(422);
 
+  const newMessage = {
+    from,
+    to,
+    text,
+    type,
+    time: dayjs().format('HH:mm:ss'),
+  };
+
   try {
-    const newMessage = await db.collection('messages').insertOne({
-      from,
-      to,
-      text,
-      type,
-      time: dayjs().format('HH:mm:ss'),
-    });
-    
-    res.sendStatus(201).send(newMessage);
+    await db.collection('messages').insertOne(newMessage);
+    res.sendStatus(201);
   } catch (err) {
     res.status(422).send(err.message);
   }
+
 })
 
 app.get('/messages', async (req, res) => {
