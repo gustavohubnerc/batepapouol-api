@@ -4,6 +4,7 @@ import cors from 'cors';
 import { MongoClient } from 'mongodb';
 import Joi from 'joi';
 import dayjs from 'dayjs';
+import { stripHtml } from 'string-strip-html';
 
 const app = express();
 app.use(cors());
@@ -24,6 +25,7 @@ try {
 
 app.post('/participants', async (req, res) => {
   const { name } = req.body;
+  const sanitizedName = stripHtml(name).result.trim(); 
 
   const participantsSchema = Joi.object({
     name: Joi.string().min(1).required()
@@ -37,13 +39,13 @@ app.post('/participants', async (req, res) => {
   }
 
   try {
-    const participant = await db.collection('participants').findOne({ name });
+    const participant = await db.collection('participants').findOne({ name: sanitizedName });
     if (participant) {
       return res.status(409).send('Já existe um participante com esse nome!');
     }
 
     await db.collection('participants').insertOne({
-      name,
+      name: sanitizedName,
       lastStatus: Date.now(),
     });
 
@@ -95,11 +97,15 @@ app.post('/messages', async (req, res) => {
     return res.status(422).send(errors);
   }
 
+  const sanitizedTo = stripHtml(to).result.trim();
+  const sanitizedText = stripHtml(text).result.trim();
+  const sanitizedType = stripHtml(type).result.trim();
+
   const newMessage = {
     from,
-    to,
-    text,
-    type,
+    to: sanitizedTo,
+    text: sanitizedText,
+    type: sanitizedType,
     time: dayjs().format('HH:mm:ss'),
   };
 
