@@ -26,7 +26,7 @@ try {
 app.post('/participants', async (req, res) => {
   const { name } = req.body;
   const sanitizedName = stripHtml(name).result.trim(); 
-  if (!sanitizedName) {
+  if (!name || !sanitizedName) {
     return res.sendStatus(422);
   }
 
