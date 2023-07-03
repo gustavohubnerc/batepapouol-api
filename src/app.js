@@ -24,13 +24,15 @@ try {
 }
 
 app.post('/participants', async (req, res) => {
-  const { name } = req.body;
+  let { name } = req.body;
 
   if(!name) return res.sendStatus(422);
 
   if(name){
     name = stripHtml(name.toString()).result.trim();
   }
+
+  if(name === "") return res.sendStatus(422);
 
   const participantsSchema = Joi.object({
     name: Joi.string().min(1).required()
