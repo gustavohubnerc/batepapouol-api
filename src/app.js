@@ -170,25 +170,19 @@ async function removeInactiveParticipants() {
   const tenSecondsAgo = Date.now() - 10000;
 
   try {
-    const { deletedCount } = await db.collection('participants').deleteMany({
-      lastStatus: { $lt: tenSecondsAgo },
-    });
+    const inactiveUsers = await db.collection('participants').find({lastStatus: { $lt: tenSecondsAgo }}).toArray();
 
-    if (deletedCount > 0) {
-      const removedParticipants = await db.collection('participants').find({
-        lastStatus: { $lt: tenSecondsAgo },
-      }).toArray();
-
-      removedParticipants.forEach(async (participant) => {
-        await db.collection('messages').insertOne({
-          from: participant.name,
-          to: 'Todos',
-          text: 'sai da sala...',
-          type: 'status',
-          time: dayjs().format('HH:mm:ss'),
-        });
+    inactiveUsers.forEach(async (user) => {
+      await db.collection('messages').insertOne({
+        from: user.name,
+        to: 'Todos',
+        text: 'sai da sala...',
+        type: 'status',
+        time: dayjs().format('HH:mm:ss'),
       });
-    }
+      await db.collection('participants').deleteOne({ name: user.name });
+    });
+    console.log('Inativos removidos!');
   } catch (err) {
     console.log(err.message);
   }
