@@ -173,6 +173,30 @@ app.post('/status', async (req, res) => {
   }
 })
 
+app.delete('/messages/:messageId', async (req, res) => {
+  const user = req.headers.user;
+  const messageId = req.params.messageId;
+
+  try {
+    const message = await db.collection('messages').findOne({ _id: messageId });
+
+    if (!message) {
+      return res.sendStatus(404);
+    }
+
+    if (message.from !== user) {
+      return res.sendStatus(401);
+    }
+
+    await db.collection('messages').deleteOne({ _id: messageId });
+
+    res.sendStatus(200);
+  } catch (err) {
+    res.status(500).send(err.message);
+  }
+});
+
+
 async function removeInactiveParticipants() {
   const tenSecondsAgo = Date.now() - 10000;
 
