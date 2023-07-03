@@ -46,13 +46,13 @@ app.post('/participants', async (req, res) => {
   }
 
   try {
-    const participant = await db.collection('participants').findOne({ name: sanitizedName });
+    const participant = await db.collection('participants').findOne({ name });
     if (participant) {
       return res.status(409).send('Já existe um participante com esse nome!');
     }
 
     await db.collection('participants').insertOne({
-      name: sanitizedName,
+      name,
       lastStatus: Date.now(),
     });
 
