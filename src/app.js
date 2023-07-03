@@ -26,6 +26,9 @@ try {
 app.post('/participants', async (req, res) => {
   const { name } = req.body;
   const sanitizedName = stripHtml(name).result.trim(); 
+  if (!sanitizedName) {
+    return res.sendStatus(422);
+  }
 
   const participantsSchema = Joi.object({
     name: Joi.string().min(1).required()
