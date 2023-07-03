@@ -173,7 +173,7 @@ app.post('/status', async (req, res) => {
   }
 })
 
-app.delete('/messages/:messageId', async (req, res) => {
+app.delete('/messages/:id', async (req, res) => {
   const user = req.headers.user;
   const { id } = req.params;
 
@@ -196,7 +196,7 @@ app.delete('/messages/:messageId', async (req, res) => {
   }
 });
 
-app.put('/messages/:messageId', async (req, res) => {
+app.put('/messages/:id', async (req, res) => {
   const user = req.headers.user;
   const { id } = req.params;
   const { to, text, type } = req.body;
