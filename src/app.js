@@ -175,10 +175,10 @@ app.post('/status', async (req, res) => {
 
 app.delete('/messages/:messageId', async (req, res) => {
   const user = req.headers.user;
-  const messageId = req.params.messageId;
+  const { id } = req.params;
 
   try {
-    const message = await db.collection('messages').findOne({ _id: messageId });
+    const message = await db.collection('messages').findOne({ _id: new ObjectId(id) });
 
     if (!message) {
       return res.sendStatus(404);
@@ -188,7 +188,7 @@ app.delete('/messages/:messageId', async (req, res) => {
       return res.sendStatus(401);
     }
 
-    await db.collection('messages').deleteOne({ _id: messageId });
+    await db.collection('messages').deleteOne({ _id: new ObjectId(id) });
 
     res.sendStatus(200);
   } catch (err) {
@@ -198,11 +198,23 @@ app.delete('/messages/:messageId', async (req, res) => {
 
 app.put('/messages/:messageId', async (req, res) => {
   const user = req.headers.user;
-  const messageId = req.params.messageId;
+  const { id } = req.params;
   const { to, text, type } = req.body;
 
+  const messagesSchema = Joi.object({
+    to: Joi.string().min(1).required(),
+    text: Joi.string().min(1).required(),
+    type: Joi.string().valid('message', 'private_message').required()
+  });
+
+  const validation = messagesSchema.validate(req.body, { abortEarly: false });
+  if (validation.error) {
+    const errors = validation.error.details.map(detail => detail.message);
+    return res.status(422).send(errors);
+  }
+
   try {
-    const message = await db.collection('messages').findOne({ _id: messageId });
+    const message = await db.collection('messages').findOne({ _id: new ObjectId(id) });
 
     if (!message) {
       return res.sendStatus(404);
@@ -212,26 +224,7 @@ app.put('/messages/:messageId', async (req, res) => {
       return res.sendStatus(401);
     }
 
-    const messagesSchema = Joi.object({
-      to: Joi.string().min(1).required(),
-      text: Joi.string().min(1).required(),
-      type: Joi.string().valid('message', 'private_message').required()
-    });
-
-    const validation = messagesSchema.validate(req.body, { abortEarly: false });
-    if (validation.error) {
-      const errors = validation.error.details.map(detail => detail.message);
-      return res.status(422).send(errors);
-    }
-
-    const updatedMessage = {
-      ...message,
-      to,
-      text,
-      type
-    };
-
-    await db.collection('messages').updateOne({ _id: messageId }, { $set: updatedMessage });
+    await db.collection('messages').updateOne({ _id: new ObjectId(id) }, { $set: to, text, type });
 
     res.sendStatus(200);
   } catch (err) {
