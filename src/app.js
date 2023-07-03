@@ -196,6 +196,49 @@ app.delete('/messages/:messageId', async (req, res) => {
   }
 });
 
+app.put('/messages/:messageId', async (req, res) => {
+  const user = req.headers.user;
+  const messageId = req.params.messageId;
+  const { to, text, type } = req.body;
+
+  try {
+    const message = await db.collection('messages').findOne({ _id: messageId });
+
+    if (!message) {
+      return res.sendStatus(404);
+    }
+
+    if (message.from !== user) {
+      return res.sendStatus(401);
+    }
+
+    const messagesSchema = Joi.object({
+      to: Joi.string().min(1).required(),
+      text: Joi.string().min(1).required(),
+      type: Joi.string().valid('message', 'private_message').required()
+    });
+
+    const validation = messagesSchema.validate(req.body, { abortEarly: false });
+    if (validation.error) {
+      const errors = validation.error.details.map(detail => detail.message);
+      return res.status(422).send(errors);
+    }
+
+    const updatedMessage = {
+      ...message,
+      to,
+      text,
+      type
+    };
+
+    await db.collection('messages').updateOne({ _id: messageId }, { $set: updatedMessage });
+
+    res.sendStatus(200);
+  } catch (err) {
+    res.status(500).send(err.message);
+  }
+});
+
 
 async function removeInactiveParticipants() {
   const tenSecondsAgo = Date.now() - 10000;
